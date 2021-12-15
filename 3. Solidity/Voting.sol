@@ -4,12 +4,7 @@ pragma solidity 0.8.9;
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract Voting is Ownable {
-    uint proposalId = 1;
-    uint8 idStatus = 0;
-    mapping(address => Voter) private _whitelist;
-    Proposal[] public proposals;
-    WorkflowStatus public status;
-
+    
     struct Voter {
         bool isRegistered;
         bool hasVoted;
@@ -30,6 +25,12 @@ contract Voting is Ownable {
         VotesTallied
     }
     
+    uint8 idStatus = 0;
+    mapping(address => Voter) private _whitelist;
+    Proposal[] public proposals;
+    WorkflowStatus public status;
+    address[] addressUsed;
+
     event VoterRegistered(address voterAddress);
     event ProposalsRegistrationStarted();
     event ProposalsRegistrationEnded();
@@ -39,15 +40,28 @@ contract Voting is Ownable {
     event Voted (address voter, uint proposalId);
     event VotesTallied();
     event WorkflowStatusChange(WorkflowStatus previousStatus, WorkflowStatus newStatus);
-    
+    //modifier
+   
+    //constructor
+   
+    //functions   
     function whitelist(address _address) public onlyOwner {
+        require (status == WorkflowStatus.RegisteringVoters);
+        _whitelist[_address].isRegistered = true;
         emit VoterRegistered(_address);
-        _whitelist[_address] = Voter(true, false, 0);
     }
 
     function proposalsReset() public onlyOwner {
         require (status == WorkflowStatus.RegisteringVoters);
         delete proposals;
+    }
+
+     function whitelistReset() public onlyOwner {
+        require (status == WorkflowStatus.RegisteringVoters);
+        for(uint i=0; i<addressUsed.length; i++){
+            _whitelist[addressUsed[i]] = Voter(false, false, 0);
+        }
+        delete addressUsed;
     }
    
     function voterRegister(uint _proposalId) public {
@@ -56,15 +70,14 @@ contract Voting is Ownable {
             && !_whitelist[msg.sender].hasVoted);
         _whitelist[msg.sender].hasVoted = true;
         _whitelist[msg.sender].votedProposalId = _proposalId;
-        emit Voted(msg.sender, _proposalId);
         proposals[_proposalId].voteCount++;
+        emit Voted(msg.sender, _proposalId);
     }
    
     function proposalRegister(string memory _description) public {
         require (_whitelist[msg.sender].isRegistered == true && status == WorkflowStatus.ProposalsRegistrationStarted);
         proposals.push(Proposal(_description, 0));
-        emit ProposalRegistered(proposalId);
-        proposalId++;
+        emit ProposalRegistered(proposals.length);
     }
     
     function winningProposal() public view returns (uint winningProposalId)

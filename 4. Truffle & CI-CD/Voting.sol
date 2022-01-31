@@ -25,11 +25,10 @@ contract Voting is Ownable {
     }
    
     uint proposalId = 1;
-    uint8 idStatus = 0;
     mapping(address => Voter) private _whitelist;
     address[] public addressUsed;
     Proposal[] public proposals;
-    WorkflowStatus public status;
+    WorkflowStatus public status = WorkflowStatus.RegisteringVoters;
     uint public winningProposalId;
    
     event VoterRegistered(address voterAddress);
@@ -91,9 +90,8 @@ contract Voting is Ownable {
    
    // update status 
     function updateStatus() public onlyOwner {
-        status = WorkflowStatus(idStatus);
-        uint8 idPreviousStatus = idStatus == 0 && idStatus !=5 ? 5 : idStatus-1;
+        status = uint8(status) == 5 ? WorkflowStatus.RegisteringVoters : WorkflowStatus(uint8(status)+1);
+        uint8 idPreviousStatus = uint(status) == 0 ? 5 : (uint8(status)-1);
         emit WorkflowStatusChange(WorkflowStatus(idPreviousStatus), status);
-        idStatus == 5 ? idStatus = 0 : idStatus++;
     }
 }
